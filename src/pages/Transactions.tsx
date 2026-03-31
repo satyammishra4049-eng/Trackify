@@ -183,11 +183,11 @@ export function Transactions() {
           <table className="w-full text-left">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
-                <th className="px-6 py-4 text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-4 text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Category</th>
-                <th className="px-6 py-4 text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Description</th>
-                <th className="px-6 py-4 text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Amount</th>
-                <th className="px-6 py-4 text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Actions</th>
+                <th className="px-3 md:px-6 py-3 md:py-4 text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Date</th>
+                <th className="px-3 md:px-6 py-3 md:py-4 text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Category</th>
+                <th className="px-3 md:px-6 py-3 md:py-4 text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Description</th>
+                <th className="px-3 md:px-6 py-3 md:py-4 text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Amount</th>
+                <th className="px-3 md:px-6 py-3 md:py-4 text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -201,22 +201,22 @@ export function Transactions() {
                     transition={{ delay: Math.min(index * 0.03, 0.5) }}
                     className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
                   >
-                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{new Date(t.date).toLocaleDateString()}</td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 group-hover:scale-105 transition-transform">
+                    <td className="px-3 md:px-6 py-3 md:py-4 text-slate-600 dark:text-slate-400 whitespace-nowrap text-xs md:text-sm">{new Date(t.date).toLocaleDateString()}</td>
+                    <td className="px-3 md:px-6 py-3 md:py-4">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 group-hover:scale-105 transition-transform">
                         {t.category}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400 max-w-xs truncate">{t.description || "-"}</td>
-                    <td className={`px-6 py-4 font-bold ${t.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
+                    <td className="px-3 md:px-6 py-3 md:py-4 text-slate-600 dark:text-slate-400 max-w-xs truncate text-xs md:text-sm">{t.description || "-"}</td>
+                    <td className={`px-3 md:px-6 py-3 md:py-4 font-bold text-xs md:text-sm ${t.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
                       {t.type === 'income' ? '+' : '-'}{formatAmount(t.amount)}
                     </td>
-                    <td className="px-6 py-4 text-right space-x-2">
-                      <button onClick={() => openEdit(t)} className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all">
-                        <Edit2 size={18} />
+                    <td className="px-3 md:px-6 py-3 md:py-4 text-right space-x-1 md:space-x-2">
+                      <button onClick={() => openEdit(t)} className="p-1.5 md:p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all">
+                        <Edit2 size={16} />
                       </button>
-                      <button onClick={() => confirmDelete(t.id)} className="p-2 text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
-                        <Trash2 size={18} />
+                      <button onClick={() => confirmDelete(t.id)} className="p-1.5 md:p-2 text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
+                        <Trash2 size={16} />
                       </button>
                     </td>
                   </motion.tr>
@@ -224,7 +224,7 @@ export function Transactions() {
               </AnimatePresence>
               {filteredTransactions.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-20 text-center text-slate-500 dark:text-slate-400">
+                  <td colSpan={5} className="px-3 md:px-6 py-12 md:py-20 text-center text-slate-500 dark:text-slate-400 text-xs md:text-sm">
                     No transactions found matching your criteria.
                   </td>
                 </tr>

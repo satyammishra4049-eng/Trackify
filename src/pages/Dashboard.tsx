@@ -152,13 +152,13 @@ export function Dashboard() {
           className="lg:col-span-2 bg-white dark:bg-slate-900 p-4 md:p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors relative overflow-hidden group"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 transition-transform duration-700 group-hover:scale-150" />
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 relative z-10">Monthly Trends</h3>
-          <div className="h-[250px] md:h-[300px] w-full relative z-10">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 md:mb-6 relative z-10">Monthly Trends</h3>
+          <div className="h-[200px] sm:h-[250px] md:h-[300px] w-full relative z-10">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" className="dark:opacity-10" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 12 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 12 }} />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 10 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 10 }} />
                 <Tooltip 
                   cursor={{ fill: "#f8fafc", opacity: 0.1 }}
                   contentStyle={{ 
@@ -170,8 +170,8 @@ export function Dashboard() {
                   }}
                   itemStyle={{ color: "#f8fafc" }}
                 />
-                <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
-                <Bar dataKey="expenses" fill="#f43f5e" radius={[4, 4, 0, 0]} barSize={20} />
+                <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} barSize={16} />
+                <Bar dataKey="expenses" fill="#f43f5e" radius={[4, 4, 0, 0]} barSize={16} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -185,17 +185,17 @@ export function Dashboard() {
           className="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors relative overflow-hidden group"
         >
           <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/5 rounded-full -ml-16 -mb-16 transition-transform duration-700 group-hover:scale-150" />
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 relative z-10">Expenses by Category</h3>
-          <div className="h-[250px] md:h-[300px] w-full relative z-10">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 md:mb-6 relative z-10">Expenses by Category</h3>
+          <div className="h-[200px] sm:h-[250px] md:h-[300px] w-full relative z-10">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={categoryData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
+                  innerRadius={40}
+                  outerRadius={60}
+                  paddingAngle={3}
                   dataKey="value"
                 >
                   {categoryData.map((entry: any, index: number) => (
@@ -303,12 +303,12 @@ function SummaryCard({ title, amount, icon: Icon, color, formatAmount, gradient 
       className={`bg-white dark:bg-slate-900 p-4 md:p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3 md:gap-4 transition-all relative overflow-hidden group`}
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 relative z-10 transition-transform group-hover:scale-110 ${colors[color]}`}>
-        <Icon size={24} />
+      <div className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center shrink-0 relative z-10 transition-transform group-hover:scale-110 ${colors[color]}`}>
+        <Icon size={18} />
       </div>
       <div className="min-w-0 flex-1 relative z-10">
         <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5 whitespace-nowrap">{title}</p>
-        <p className="text-lg font-extrabold text-slate-900 dark:text-white leading-none">{formatAmount(amount)}</p>
+        <p className="text-sm md:text-lg font-extrabold text-slate-900 dark:text-white leading-none">{formatAmount(amount)}</p>
       </div>
     </motion.div>
   );
