@@ -1,17 +1,38 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 
 dotenv.config();
 
-// Import the Express app (relative path from api folder)
-import app from '../server/app.ts';
+import app from '../app.js';
+
+let isReady = false;
+
+async function connectDB() {
+  if (isReady) return;
+
+  if (!process.env.MONGO_URI) {
+    throw new Error('MONGO_URI missing');
+  }
+
+  if (mongoose.connection.readyState !== 1) {
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log('DB Connected');
+  }
+
+  isReady = true;
+}
 
 // Vercel serverless handler
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Connect to DB on first request
-  const { connectDB } = await import('../server/config/db.ts');
-  await connectDB();
-  
-  // Handle the request through Express
-  return app(req, res);
+  try {
+    await connectDB();
+    return app(req, res);
+  } catch (error: any) {
+    console.error('SERVER ERROR:', error);
+    return res.status(500).json({
+      message: 'Server failed',
+      error: error?.message || 'Unknown error',
+    });
+  }
 }

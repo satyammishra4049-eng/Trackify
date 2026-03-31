@@ -1,6 +1,6 @@
 import express from 'express';
-import { getBudgets, addBudget, deleteBudget } from '../controllers/budgetController.ts';
-import { authenticateToken } from '../middleware/authMiddleware.ts';
+import { getBudgets, addBudget, deleteBudget } from '../controllers/budgetController';
+import { authenticateToken } from '../middleware/authMiddleware';
 
 const router = express.Router();
 

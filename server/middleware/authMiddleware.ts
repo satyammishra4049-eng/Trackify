@@ -1,7 +1,9 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
-import User from '../models/User.ts';
-import { IUser } from '../models/User.ts';
+import User from '../models/User';
+import { IUser } from '../models/User';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'trackifySecretKey123';
 
 export interface AuthRequest extends Request {
   user?: IUser;
@@ -28,13 +30,7 @@ export const authenticateToken = async (
   }
 
   try {
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      res.status(500).json({ error: 'JWT secret not configured' });
-      return;
-    }
-
-    const decoded = jwt.verify(token, jwtSecret) as { id: string };
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
 
     // FIX: Check if user still exists in DB (handles deleted accounts)
     const user = await User.findById(decoded.id).select('-password');

@@ -1,8 +1,10 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import User from '../models/User.ts';
-import { sendOTPEmail, sendWelcomeEmail } from '../services/emailService.ts';
+import User from '../models/User';
+import { sendOTPEmail, sendWelcomeEmail } from '../services/emailService';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'trackifySecretKey123';
 
 // -------------------------------------------------------
 // Rate Limiting Store (In-memory)
@@ -44,12 +46,7 @@ const checkRateLimit = (identifier: string): boolean => {
 // Helper: Generate JWT token
 // -------------------------------------------------------
 const generateToken = (id: string): string => {
-  const jwtSecret = process.env.JWT_SECRET;
-  if (!jwtSecret) {
-    throw new Error('JWT_SECRET is missing');
-  }
-
-  return jwt.sign({ id }, jwtSecret, {
+  return jwt.sign({ id }, JWT_SECRET, {
     expiresIn: '30d',
   });
 };

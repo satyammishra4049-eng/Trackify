@@ -1,6 +1,6 @@
 import { Response } from 'express';
-import { AuthRequest } from '../middleware/authMiddleware.ts';
-import Transaction from '../models/Transaction.ts';
+import { AuthRequest } from '../middleware/authMiddleware';
+import Transaction from '../models/Transaction';
 
 // -------------------------------------------------------
 // @desc    Get all transactions for a user

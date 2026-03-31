@@ -33,8 +33,8 @@ console.log('✅ Environment variables loaded successfully!');
 console.log('');
 
 // Now safe to import other modules (after dotenv loaded)
-import { connectDB } from './server/config/db.ts';
-import app from './server/app.ts';
+import { connectDB } from './server/config/db';
+import app from './app';
 
 const DEFAULT_PORT = 5001;
 const rawPort = Number(process.env.PORT);
@@ -44,7 +44,7 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const startServer = async (): Promise<void> => {
   // Dynamic import email service AFTER dotenv is loaded
-  const { verifyEmailConfig } = await import('./server/services/emailService.ts');
+  const { verifyEmailConfig } = await import('./server/services/emailService');
   
   // Verify email configuration on startup
   const emailReady = await verifyEmailConfig();

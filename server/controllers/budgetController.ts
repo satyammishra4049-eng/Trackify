@@ -1,6 +1,6 @@
 import { Response } from 'express';
-import { AuthRequest } from '../middleware/authMiddleware.ts';
-import Budget from '../models/Budget.ts';
+import { AuthRequest } from '../middleware/authMiddleware';
+import Budget from '../models/Budget';
 
 export const getBudgets = async (req: AuthRequest, res: Response): Promise<void> => {
   try {

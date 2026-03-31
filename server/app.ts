@@ -2,10 +2,10 @@ import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 
-import authRoutes from './routes/authRoutes.ts';
-import budgetRoutes from './routes/budgetRoutes.ts';
-import transactionRoutes from './routes/transactionRoutes.ts';
-import userRoutes from './routes/userRoutes.ts';
+import authRoutes from './routes/authRoutes';
+import budgetRoutes from './routes/budgetRoutes';
+import transactionRoutes from './routes/transactionRoutes';
+import userRoutes from './routes/userRoutes';
 
 const app = express();
 

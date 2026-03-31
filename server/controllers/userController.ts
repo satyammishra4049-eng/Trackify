@@ -1,8 +1,8 @@
 import { Response } from 'express';
 import bcrypt from 'bcryptjs';
-import User from '../models/User.ts';
-import Transaction from '../models/Transaction.ts';
-import { AuthRequest } from '../middleware/authMiddleware.ts';
+import User from '../models/User';
+import Transaction from '../models/Transaction';
+import { AuthRequest } from '../middleware/authMiddleware';
 
 // -------------------------------------------------------
 // @desc    Get current user

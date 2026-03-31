@@ -1,6 +1,10 @@
 import mongoose from 'mongoose';
 
 export const connectDB = async (): Promise<void> => {
+  if (mongoose.connection.readyState === 1) {
+    return;
+  }
+
   const rawUri = process.env.MONGO_URI;
   if (!rawUri) {
     throw new Error('MONGO_URI is missing in .env');
