@@ -1,10 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
+// User interface matching backend response (toJSON transform converts _id to id)
 interface User {
-  id: number;
+  id: string;
   name: string;
   email: string;
-  avatarUrl?: string | null;
+  avatarUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface AuthContextType {
@@ -27,8 +30,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const savedToken = localStorage.getItem("token");
     const savedUser = localStorage.getItem("user");
     if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        setToken(savedToken);
+        setUser(parsedUser);
+      } catch (e) {
+        // Invalid user data, clear storage
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
     }
     setLoading(false);
   }, []);
@@ -45,6 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("remembered_email");
   };
 
   const updateProfile = (newUser: User) => {

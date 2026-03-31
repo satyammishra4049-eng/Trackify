@@ -1,0 +1,55 @@
+import express, { NextFunction, Request, Response } from 'express';
+import cors from 'cors';
+import mongoose from 'mongoose';
+
+import authRoutes from './routes/authRoutes.ts';
+import budgetRoutes from './routes/budgetRoutes.ts';
+import transactionRoutes from './routes/transactionRoutes.ts';
+import userRoutes from './routes/userRoutes.ts';
+
+const app = express();
+
+// CORS configuration - allow frontend origin
+app.use(cors({
+  origin: ['http://localhost:5002', 'http://127.0.0.1:5002'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+app.get('/', (_req, res) => {
+  res.status(200).json({ message: 'API Running' });
+});
+
+app.get('/api/health', (_req, res) => {
+  res.status(200).json({ ok: true, service: 'trackify-backend' });
+});
+
+// If Mongo isn't connected yet, keep APIs stable and return a consistent response.
+app.use('/api', (_req: Request, res: Response, next: NextFunction) => {
+  if (mongoose.connection.readyState !== 1) {
+    res.status(503).json({ error: 'Database not connected' });
+    return;
+  }
+  next();
+});
+
+app.use('/api/auth', authRoutes);
+app.use('/api/budgets', budgetRoutes);
+app.use('/api/transactions', transactionRoutes);
+app.use('/api/users', userRoutes);
+
+app.use((_req: Request, res: Response) => {
+  res.status(404).json({ error: 'Route not found' });
+});
+
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  const message = err instanceof Error ? err.message : 'Internal server error';
+  console.error('[API] Unhandled error:', err);
+  res.status(500).json({ error: message });
+});
+
+export default app;

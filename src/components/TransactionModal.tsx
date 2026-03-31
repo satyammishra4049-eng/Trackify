@@ -3,18 +3,20 @@ import { X, Tag, Calendar } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useAuth } from "./AuthContext";
 import { useCurrency } from "./CurrencyContext";
+import { transactionAPI } from "../services/api";
+import { toast } from "sonner";
 
 interface TransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  editingId?: number | null;
+  editingId?: string | null;
   initialData?: any;
 }
 
 export function TransactionModal({ isOpen, onClose, onSuccess, editingId, initialData }: TransactionModalProps) {
-  const { token } = useAuth();
   const { currency } = useCurrency();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     amount: "",
     type: "expense",
@@ -47,21 +49,29 @@ export function TransactionModal({ isOpen, onClose, onSuccess, editingId, initia
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const url = editingId ? `/api/transactions/${editingId}` : "/api/transactions";
-    const method = editingId ? "PUT" : "POST";
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        amount: parseFloat(formData.amount),
+        type: formData.type as 'income' | 'expense',
+        category: formData.category,
+        date: formData.date,
+        description: formData.description
+      };
 
-    const res = await fetch(url, {
-      method,
-      headers: { 
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ ...formData, amount: parseFloat(formData.amount) }),
-    });
-
-    if (res.ok) {
+      if (editingId) {
+        await transactionAPI.updateTransaction(editingId, payload);
+        toast.success("Transaction updated");
+      } else {
+        await transactionAPI.addTransaction(payload);
+        toast.success("Transaction added");
+      }
       onSuccess();
       onClose();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save transaction");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

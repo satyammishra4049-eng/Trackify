@@ -11,8 +11,10 @@ import {
 } from "lucide-react";
 import { useAuth } from "../components/AuthContext";
 import { useCurrency } from "../components/CurrencyContext";
+import { transactionAPI } from "../services/api";
 import { TransactionModal } from "../components/TransactionModal";
 import { motion, AnimatePresence } from "motion/react";
+import { toast, Toaster } from "sonner";
 
 export function Transactions() {
   const { token } = useAuth();
@@ -20,8 +22,8 @@ export function Transactions() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editingData, setEditingData] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
@@ -36,27 +38,29 @@ export function Transactions() {
   }, []);
 
   const fetchTransactions = async () => {
-    const res = await fetch("/api/transactions", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await res.json();
-    setTransactions(data);
+    try {
+      const data = await transactionAPI.getTransactions();
+      setTransactions(data || []);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to load transactions");
+      setTransactions([]);
+    }
   };
 
   const handleDelete = async () => {
     if (!deleteId) return;
-    const res = await fetch(`/api/transactions/${deleteId}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (res.ok) {
+    try {
+      await transactionAPI.deleteTransaction(deleteId);
+      toast.success("Transaction deleted");
       fetchTransactions();
       setIsDeleteModalOpen(false);
       setDeleteId(null);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete transaction");
     }
   };
 
-  const confirmDelete = (id: number) => {
+  const confirmDelete = (id: string) => {
     setDeleteId(id);
     setIsDeleteModalOpen(true);
   };

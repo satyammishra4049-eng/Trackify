@@ -1,12 +1,12 @@
 import React, { useState, useRef } from "react";
 import { useAuth } from "../components/AuthContext";
+import { userAPI } from "../services/api";
+import { useCurrency } from "../components/CurrencyContext";
 import { 
   User, 
   Mail, 
   Camera, 
   Save, 
-  CheckCircle2, 
-  AlertCircle,
   Shield,
   Calendar,
   Key,
@@ -25,15 +25,16 @@ import { motion, AnimatePresence } from "motion/react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useTheme } from "../components/ThemeContext";
+import { toast, Toaster } from "sonner";
 
 export function Profile() {
   const { user, token, updateProfile } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { currency } = useCurrency();
   const [name, setName] = useState(user?.name || "");
   const [email, setEmail] = useState(user?.email || "");
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || "");
   const [isSaving, setIsSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Password Change State
@@ -45,7 +46,7 @@ export function Profile() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [passwordMessage, setPasswordMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [passwordMessage, setPasswordMessage] = useState<{type: 'error' | 'success', text: string} | null>(null);
 
   // Data Export State
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
@@ -54,7 +55,7 @@ export function Profile() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        setMessage({ type: 'error', text: "Image size must be less than 2MB" });
+        toast.error("Image size must be less than 2MB");
         return;
       }
       const reader = new FileReader();
@@ -68,28 +69,13 @@ export function Profile() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    setMessage(null);
 
     try {
-      const res = await fetch("/api/user/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ name, email, avatarUrl })
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        updateProfile(data.user);
-        setMessage({ type: 'success', text: "Profile updated successfully!" });
-      } else {
-        setMessage({ type: 'error', text: data.error || "Failed to update profile" });
-      }
-    } catch (err) {
-      setMessage({ type: 'error', text: "An error occurred. Please try again." });
+      const data = await userAPI.updateProfile(name, email, avatarUrl);
+      updateProfile(data.user);
+      toast.success("Profile updated successfully!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update profile");
     } finally {
       setIsSaving(false);
     }
@@ -97,40 +83,44 @@ export function Profile() {
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Clear previous message
+    setPasswordMessage(null);
+    setIsChangingPassword(true);
+    
+    // VALIDATION 1: Check if new passwords match
     if (newPassword !== confirmPassword) {
-      setPasswordMessage({ type: 'error', text: "New passwords do not match" });
+      setPasswordMessage({ type: 'error', text: 'Invalid password' });
+      setIsChangingPassword(false);
+      return;
+    }
+    
+    // VALIDATION 2: Check minimum length
+    if (newPassword.length < 6) {
+      setPasswordMessage({ type: 'error', text: 'Invalid password' });
+      setIsChangingPassword(false);
+      return;
+    }
+    
+    // VALIDATION 3: Check if current and new are same
+    if (currentPassword === newPassword) {
+      setPasswordMessage({ type: 'error', text: 'Invalid password' });
+      setIsChangingPassword(false);
       return;
     }
 
-    setIsChangingPassword(true);
-    setPasswordMessage(null);
-
     try {
-      const res = await fetch("/api/user/password", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ currentPassword, newPassword })
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        setPasswordMessage({ type: 'success', text: "Password changed successfully!" });
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-        setTimeout(() => {
-          setIsPasswordModalOpen(false);
-          setPasswordMessage(null);
-        }, 2000);
-      } else {
-        setPasswordMessage({ type: 'error', text: data.error || "Failed to change password" });
-      }
-    } catch (err) {
-      setPasswordMessage({ type: 'error', text: "An error occurred. Please try again." });
+      await userAPI.updatePassword(currentPassword, newPassword);
+      setPasswordMessage({ type: 'success', text: 'Update successful' });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => {
+        setIsPasswordModalOpen(false);
+        setPasswordMessage(null);
+      }, 1500);
+    } catch (err: any) {
+      setPasswordMessage({ type: 'error', text: 'Invalid password' });
     } finally {
       setIsChangingPassword(false);
     }
@@ -139,10 +129,67 @@ export function Profile() {
   const generatePDFReport = async (shouldShare = false) => {
     setIsGeneratingPDF(true);
     try {
-      const res = await fetch("/api/user/export", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
+      // Get selected currency code (fallback to INR)
+      const currencyCode = currency?.code || 'INR';
+      
+      // Fetch data with currency parameter
+      const data = await userAPI.exportData(currencyCode);
+      
+      // Use currency symbol + formatted number (ASCII-compatible for jsPDF)
+      const getCurrencySymbol = (code: string) => {
+        const symbols: Record<string, string> = {
+          'USD': '$',
+          'EUR': 'EUR ',
+          'GBP': 'GBP ',
+          'JPY': 'JPY ',
+          'INR': 'Rs. ',
+          'AUD': 'A$',
+          'CAD': 'C$',
+          'CHF': 'CHF ',
+          'CNY': 'CNY ',
+          'NZD': 'NZ$',
+          'BRL': 'R$',
+          'RUB': 'RUB ',
+          'KRW': 'KRW ',
+          'SGD': 'S$',
+          'MXN': 'Mex$',
+          'ZAR': 'R',
+          'TRY': 'TL ',
+          'AED': 'AED ',
+          'SAR': 'SAR ',
+          'THB': 'THB ',
+          'IDR': 'Rp ',
+          'MYR': 'RM',
+          'PHP': 'P',
+          'VND': 'VND ',
+          'HKD': 'HK$',
+          'TWD': 'NT$',
+          'EGP': 'E£',
+          'NGN': 'N',
+          'PKR': 'Rs. ',
+          'BDT': 'Tk ',
+          'UAH': 'UAH ',
+          'PLN': 'zl ',
+          'SEK': 'kr ',
+          'NOK': 'kr ',
+          'DKK': 'kr ',
+          'ILS': 'ILS ',
+          'CLP': 'CLP$',
+          'COP': 'COL$',
+          'PEN': 'S/. ',
+          'ARS': 'ARS$',
+          'CZK': 'Kc ',
+          'HUF': 'Ft ',
+          'RON': 'lei ',
+        };
+        return symbols[code] || code + ' ';
+      };
+      
+      const formatCurrency = (amount: number) => {
+        const symbol = getCurrencySymbol(currencyCode);
+        const formatted = amount.toLocaleString('en-US');
+        return `${symbol}${formatted}`;
+      };
       
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
@@ -165,6 +212,7 @@ export function Profile() {
       doc.setFontSize(12);
       doc.text(`User: ${data.user.name}`, 15, 50);
       doc.text(`Email: ${data.user.email}`, 15, 56);
+      doc.text(`Currency: ${currencyCode}`, 15, 62);
       
       // Summary Section
       const totalIncome = data.transactions
@@ -176,19 +224,19 @@ export function Profile() {
       const netBalance = totalIncome - totalExpense;
       
       doc.setDrawColor(226, 232, 240); // Slate-200
-      doc.line(15, 65, pageWidth - 15, 65);
+      doc.line(15, 68, pageWidth - 15, 68);
       
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
-      doc.text("Financial Summary", 15, 75);
+      doc.text("Financial Summary", 15, 78);
       
       autoTable(doc, {
-        startY: 80,
+        startY: 83,
         head: [['Metric', 'Amount']],
         body: [
-          ['Total Income', `$${totalIncome.toLocaleString()}`],
-          ['Total Expenses', `$${totalExpense.toLocaleString()}`],
-          ['Net Balance', `$${netBalance.toLocaleString()}`]
+          ['Total Income', formatCurrency(totalIncome)],
+          ['Total Expenses', formatCurrency(totalExpense)],
+          ['Net Balance', formatCurrency(netBalance)]
         ],
         theme: 'striped',
         headStyles: { fillColor: [79, 70, 229] },
@@ -208,7 +256,7 @@ export function Profile() {
           t.description || '-',
           t.category,
           t.type.toUpperCase(),
-          `$${t.amount.toLocaleString()}`
+          formatCurrency(t.amount)
         ]),
         theme: 'grid',
         headStyles: { fillColor: [79, 70, 229] },
@@ -227,7 +275,7 @@ export function Profile() {
           head: [['Category', 'Monthly Limit', 'Month']],
           body: data.budgets.map((b: any) => [
             b.category,
-            `$${b.amount.toLocaleString()}`,
+            formatCurrency(b.amount),
             b.month
           ]),
           theme: 'grid',
@@ -253,8 +301,11 @@ export function Profile() {
       } else {
         doc.save(`trackify-report-${new Date().toISOString().split('T')[0]}.pdf`);
       }
+      
+      toast.success(`PDF report generated with ${currencyCode} currency!`);
     } catch (err) {
       console.error("PDF generation failed:", err);
+      toast.error("Failed to generate PDF report");
     } finally {
       setIsGeneratingPDF(false);
     }
@@ -365,19 +416,6 @@ export function Profile() {
                   Save Changes
                 </button>
               </div>
-
-              {message && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex items-center gap-3 p-4 rounded-2xl ${
-                    message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
-                  }`}
-                >
-                  {message.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
-                  <span className="text-sm font-medium">{message.text}</span>
-                </motion.div>
-              )}
             </form>
           </div>
 
@@ -469,7 +507,10 @@ export function Profile() {
             
             <div className="space-y-4">
               <div 
-                onClick={() => setIsPasswordModalOpen(true)}
+                onClick={() => {
+                  setIsPasswordModalOpen(true);
+                  setPasswordMessage(null);
+                }}
                 className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-2xl transition-all cursor-pointer group"
               >
                 <div className="flex items-center gap-4">
@@ -577,8 +618,10 @@ export function Profile() {
                 </div>
 
                 {passwordMessage && (
-                  <div className={`p-4 rounded-2xl text-sm font-medium ${
-                    passwordMessage.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400'
+                  <div className={`p-3 rounded-xl text-center text-sm font-bold ${
+                    passwordMessage.type === 'error' 
+                      ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' 
+                      : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                   }`}>
                     {passwordMessage.text}
                   </div>

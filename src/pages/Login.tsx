@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../components/AuthContext";
-import { TrendingUp, Mail, Lock, User as UserIcon, CheckCircle2, ShieldCheck, Zap, Eye, EyeOff, ArrowLeft, KeyRound, RefreshCw } from "lucide-react";
+import { authAPI } from "../services/api";
+import { TrendingUp, Mail, Lock, User as UserIcon, KeyRound, RefreshCw, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast, Toaster } from "sonner";
 
@@ -36,7 +37,8 @@ export function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timer, setTimer] = useState(0);
   const [rememberMe, setRememberMe] = useState(false);
-  const [demoCode, setDemoCode] = useState<string | null>(null);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [verifyOtp, setVerifyOtp] = useState("");
   
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -60,24 +62,12 @@ export function Login() {
     setIsSubmitting(true);
     setError("");
     try {
-      const res = await fetch("/api/auth/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        toast.success(data.message);
-        if (data.demoCode) {
-          setDemoCode(data.demoCode);
-        }
-        setForgotStep(2);
-        setTimer(60);
-      } else {
-        toast.error(data.error || "Failed to send OTP");
-      }
-    } catch (err) {
-      toast.error("Something went wrong");
+      const data = await authAPI.forgotPassword(email);
+      toast.success(data.message);
+      setForgotStep(2);
+      setTimer(60);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to send OTP");
     } finally {
       setIsSubmitting(false);
     }
@@ -91,20 +81,12 @@ export function Login() {
     }
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/auth/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        toast.success("OTP verified!");
-        setForgotStep(3);
-      } else {
-        toast.error(data.error || "Invalid OTP");
-      }
-    } catch (err) {
-      toast.error("Something went wrong");
+      // For forgot password, we just verify the OTP exists and proceed to reset
+      // The actual validation happens during reset-password
+      toast.success("OTP entered! Please set your new password.");
+      setForgotStep(3);
+    } catch (err: any) {
+      toast.error(err.message || "Invalid OTP");
     } finally {
       setIsSubmitting(false);
     }
@@ -122,22 +104,13 @@ export function Login() {
     }
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/auth/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp, newPassword }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        toast.success("Password reset successfully! You can now sign in.");
-        setIsForgotMode(false);
-        setForgotStep(1);
-        setPassword("");
-      } else {
-        toast.error(data.error || "Failed to reset password");
-      }
-    } catch (err) {
-      toast.error("Something went wrong");
+      await authAPI.resetPassword(email, otp, newPassword);
+      toast.success("Password reset successfully! You can now sign in.");
+      setIsForgotMode(false);
+      setForgotStep(1);
+      setPassword("");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to reset password");
     } finally {
       setIsSubmitting(false);
     }
@@ -147,26 +120,55 @@ export function Login() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        if (rememberMe) {
-          localStorage.setItem("remembered_email", email);
-        } else {
-          localStorage.removeItem("remembered_email");
-        }
-        login(data.token, data.user);
-        toast.success("Welcome back!");
-        navigate("/");
+      const data = await authAPI.login(email, password);
+      if (rememberMe) {
+        localStorage.setItem("remembered_email", email);
       } else {
-        toast.error(data.error || "Invalid credentials");
+        localStorage.removeItem("remembered_email");
       }
-    } catch (err) {
-      toast.error("Something went wrong");
+      login(data.token, data.user);
+      toast.success("Welcome back!");
+      navigate("/");
+    } catch (err: any) {
+      // Check if email needs verification
+      if (err.message?.includes('verify your email') || err.requiresVerification) {
+        toast.error("Please verify your email before logging in.");
+        setNeedsVerification(true);
+      } else {
+        toast.error(err.message || "Invalid credentials");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyFromLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!verifyOtp || verifyOtp.length !== 6) {
+      toast.error("Please enter a valid 6-digit OTP.");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const data = await authAPI.verifyEmail(email, verifyOtp);
+      login(data.token, data.user);
+      toast.success("Email verified successfully! Welcome to Trackify!");
+      setNeedsVerification(false);
+      navigate("/");
+    } catch (err: any) {
+      toast.error(err.message || "Invalid OTP");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResendFromLogin = async () => {
+    setIsSubmitting(true);
+    try {
+      const data = await authAPI.resendOTP(email);
+      toast.success(data.message);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to resend OTP");
     } finally {
       setIsSubmitting(false);
     }
@@ -202,31 +204,74 @@ export function Login() {
 
           <motion.div variants={itemVariants} className="mb-10">
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
-              {isForgotMode 
-                ? (forgotStep === 1 ? "Reset password" : forgotStep === 2 ? "Verify OTP" : "New Password") 
-                : "Welcome back"}
+              {needsVerification 
+                ? "Verify Email" 
+                : isForgotMode 
+                  ? (forgotStep === 1 ? "Reset password" : forgotStep === 2 ? "Verify OTP" : "New Password") 
+                  : "Welcome back"}
             </h1>
             <p className="text-slate-500 dark:text-slate-400">
-              {isForgotMode 
-                ? (forgotStep === 1 
-                    ? "Enter your email to receive a 6-digit OTP." 
-                    : forgotStep === 2 
-                      ? `We've sent a code to ${email}` 
-                      : "Create a strong new password for your account.") 
-                : "Please enter your details to sign in."}
+              {needsVerification
+                ? `We've sent a verification code to ${email}. Please enter it below to verify your email.`
+                : isForgotMode 
+                  ? (forgotStep === 1 
+                      ? "Enter your email to receive a 6-digit OTP." 
+                      : forgotStep === 2 
+                        ? `We've sent a code to ${email}` 
+                        : "Create a strong new password for your account.") 
+                  : "Please enter your details to sign in."}
             </p>
           </motion.div>
 
           <form 
             onSubmit={
-              isForgotMode 
-                ? (forgotStep === 1 ? handleRequestOtp : forgotStep === 2 ? handleVerifyOtp : handleResetPassword) 
-                : handleSubmit
+              needsVerification
+                ? handleVerifyFromLogin
+                : isForgotMode 
+                  ? (forgotStep === 1 ? handleRequestOtp : forgotStep === 2 ? handleVerifyOtp : handleResetPassword) 
+                  : handleSubmit
             } 
             className="space-y-6"
           >
             <AnimatePresence mode="wait">
-              {isForgotMode ? (
+              {needsVerification ? (
+                <motion.div
+                  key="email-verification"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-6"
+                >
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1 text-center block">Enter 6-digit Verification Code</label>
+                      <div className="relative group">
+                        <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-indigo-600 dark:group-focus-within:text-indigo-400 transition-colors" size={20} />
+                        <input
+                          type="text"
+                          required
+                          maxLength={6}
+                          value={verifyOtp}
+                          onChange={(e) => setVerifyOtp(e.target.value.replace(/\D/g, ""))}
+                          className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all text-slate-900 dark:text-white text-center text-2xl tracking-[0.5em] font-bold placeholder:text-slate-300 dark:placeholder:text-slate-700"
+                          placeholder="000000"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-center">
+                      <button
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={handleResendFromLogin}
+                        className="flex items-center gap-2 text-sm font-bold text-indigo-600 dark:text-indigo-400 disabled:text-slate-400 transition-colors"
+                      >
+                        <RefreshCw size={16} className={isSubmitting ? "animate-spin" : ""} />
+                        Resend OTP
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ) : isForgotMode ? (
                 <motion.div
                   key={`forgot-step-${forgotStep}`}
                   initial={{ opacity: 0, x: 20 }}
@@ -253,13 +298,6 @@ export function Login() {
 
                   {forgotStep === 2 && (
                     <div className="space-y-4">
-                      {demoCode && (
-                        <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl text-center">
-                          <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-1">Demo Mode OTP</p>
-                          <p className="text-2xl font-black text-indigo-700 dark:text-indigo-300 tracking-[0.2em]">{demoCode}</p>
-                          <p className="text-[10px] text-indigo-500/70 dark:text-indigo-400/50 mt-1 italic">This is only visible in development</p>
-                        </div>
-                      )}
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1 text-center block">Enter 6-digit Code</label>
                         <div className="relative group">
@@ -412,27 +450,31 @@ export function Login() {
             >
               {isSubmitting && <RefreshCw size={20} className="animate-spin" />}
               {isSubmitting 
-                ? "Processing..." 
-                : isForgotMode 
+                ? (needsVerification ? "Verifying..." : isForgotMode ? "Processing..." : "Signing In...")
+                : (needsVerification ? "Verify Email" : isForgotMode 
                   ? (forgotStep === 1 ? "Send Reset Link" : forgotStep === 2 ? "Verify OTP" : "Reset Password") 
-                  : "Sign In"}
+                  : "Sign In")}
             </motion.button>
 
-            {isForgotMode && (
+            {(isForgotMode || needsVerification) && (
               <motion.button
                 variants={itemVariants}
                 type="button"
                 onClick={() => {
-                  if (forgotStep > 1) {
-                    setForgotStep(forgotStep - 1);
-                  } else {
-                    setIsForgotMode(false);
+                  if (needsVerification) {
+                    setNeedsVerification(false);
+                  } else if (isForgotMode) {
+                    if (forgotStep > 1) {
+                      setForgotStep(forgotStep - 1);
+                    } else {
+                      setIsForgotMode(false);
+                    }
                   }
                 }}
                 className="w-full flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 font-bold hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
               >
                 <ArrowLeft size={18} />
-                {forgotStep === 1 ? "Back to Sign In" : "Back"}
+                {needsVerification ? "Back to Sign In" : forgotStep === 1 ? "Back to Sign In" : "Back"}
               </motion.button>
             )}
           </form>
@@ -455,26 +497,64 @@ export function Register() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [requiresVerification, setRequiresVerification] = useState(false);
+  const [otp, setOtp] = useState("");
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setError("");
     try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        login(data.token, data.user);
-        navigate("/");
+      const data = await authAPI.register(name, email, password);
+      // Check if email verification is required
+      if (data.requiresVerification) {
+        setRequiresVerification(true);
+        toast.success("Registration successful! Please check your email for the verification OTP.");
       } else {
-        setError(data.error);
+        // Legacy flow - auto login
+        login(data.token, data.user);
+        toast.success("Account created successfully!");
+        navigate("/");
       }
-    } catch (err) {
-      setError("Something went wrong");
+    } catch (err: any) {
+      setError(err.message || "Registration failed");
+      toast.error(err.message || "Registration failed");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otp || otp.length !== 6) {
+      toast.error("Please enter a valid 6-digit OTP.");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const data = await authAPI.verifyEmail(email, otp);
+      login(data.token, data.user);
+      toast.success("Email verified successfully! Welcome to Trackify!");
+      navigate("/");
+    } catch (err: any) {
+      toast.error(err.message || "Invalid OTP");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    setIsSubmitting(true);
+    try {
+      const data = await authAPI.resendOTP(email);
+      toast.success(data.message);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to resend OTP");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -498,11 +578,17 @@ export function Register() {
           </div>
 
           <motion.div variants={itemVariants} className="mb-10">
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Create account</h1>
-            <p className="text-slate-500 dark:text-slate-400">Join us and start managing your wealth.</p>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
+              {requiresVerification ? "Verify Email" : "Create account"}
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400">
+              {requiresVerification 
+                ? `We've sent a verification code to ${email}` 
+                : "Join us and start managing your wealth."}
+            </p>
           </motion.div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={requiresVerification ? handleVerifyEmail : handleSubmit} className="space-y-5">
             {error && (
               <motion.div 
                 initial={{ opacity: 0, x: -10 }}
@@ -514,66 +600,103 @@ export function Register() {
               </motion.div>
             )}
 
-            <motion.div variants={itemVariants} className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">Full Name</label>
-              <div className="relative group">
-                <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-indigo-600 dark:group-focus-within:text-indigo-400 transition-colors" size={20} />
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
-                  placeholder="John Doe"
-                />
-              </div>
-            </motion.div>
+            {requiresVerification ? (
+              <motion.div variants={itemVariants} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1 text-center block">Enter 6-digit Verification Code</label>
+                  <div className="relative group">
+                    <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-indigo-600 dark:group-focus-within:text-indigo-400 transition-colors" size={20} />
+                    <input
+                      type="text"
+                      required
+                      maxLength={6}
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                      className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all text-slate-900 dark:text-white text-center text-2xl tracking-[0.5em] font-bold placeholder:text-slate-300 dark:placeholder:text-slate-700"
+                      placeholder="000000"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={handleResendOTP}
+                    className="flex items-center gap-2 text-sm font-bold text-indigo-600 dark:text-indigo-400 disabled:text-slate-400 transition-colors"
+                  >
+                    <RefreshCw size={16} className={isSubmitting ? "animate-spin" : ""} />
+                    Resend OTP
+                  </button>
+                </div>
+              </motion.div>
+            ) : (
+              <>
+                <motion.div variants={itemVariants} className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">Full Name</label>
+                  <div className="relative group">
+                    <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-indigo-600 dark:group-focus-within:text-indigo-400 transition-colors" size={20} />
+                    <input
+                      type="text"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                      placeholder="John Doe"
+                    />
+                  </div>
+                </motion.div>
 
-            <motion.div variants={itemVariants} className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">Email Address</label>
-              <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-indigo-600 dark:group-focus-within:text-indigo-400 transition-colors" size={20} />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
-                  placeholder="name@example.com"
-                />
-              </div>
-            </motion.div>
+                <motion.div variants={itemVariants} className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">Email Address</label>
+                  <div className="relative group">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-indigo-600 dark:group-focus-within:text-indigo-400 transition-colors" size={20} />
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                      placeholder="name@example.com"
+                    />
+                  </div>
+                </motion.div>
 
-            <motion.div variants={itemVariants} className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">Password</label>
-              <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-indigo-600 dark:group-focus-within:text-indigo-400 transition-colors" size={20} />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-12 pr-12 py-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 dark:text-slate-500 dark:hover:text-indigo-400 transition-colors focus:outline-none"
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
-            </motion.div>
+                <motion.div variants={itemVariants} className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">Password</label>
+                  <div className="relative group">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-indigo-600 dark:group-focus-within:text-indigo-400 transition-colors" size={20} />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full pl-12 pr-12 py-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 dark:text-slate-500 dark:hover:text-indigo-400 transition-colors focus:outline-none"
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+                </motion.div>
+              </>
+            )}
 
             <motion.button
               variants={itemVariants}
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
               type="submit"
-              className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-xl shadow-indigo-200 dark:shadow-none transition-all duration-200"
+              disabled={isSubmitting}
+              className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-xl shadow-indigo-200 dark:shadow-none transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Create Account
+              {isSubmitting && <RefreshCw size={20} className="animate-spin" />}
+              {isSubmitting 
+                ? (requiresVerification ? "Verifying..." : "Creating Account...") 
+                : (requiresVerification ? "Verify Email" : "Create Account")}
             </motion.button>
           </form>
 

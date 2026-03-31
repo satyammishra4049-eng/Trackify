@@ -46,12 +46,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 flex transition-colors duration-300">
       {/* Sidebar - Desktop */}
       <aside className="hidden md:flex flex-col w-60 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 p-5 fixed h-full transition-colors">
-        <div className="flex items-center gap-2 mb-8">
+        <Link to="/" className="flex items-center gap-2 mb-8 cursor-pointer hover:opacity-80 transition-opacity">
           <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200 dark:shadow-none">
             <TrendingUp size={22} />
           </div>
           <span className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Trackify</span>
-        </div>
+        </Link>
 
         <nav className="flex-1 space-y-1">
           {navItems.map((item, index) => (
@@ -119,12 +119,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 h-14 px-4 flex items-center justify-between z-50 transition-colors">
-        <div className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2">
           <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
             <TrendingUp size={18} />
           </div>
           <span className="text-base font-bold text-slate-900 dark:text-white">Trackify</span>
-        </div>
+        </Link>
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-slate-600 dark:text-slate-400">
           {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>

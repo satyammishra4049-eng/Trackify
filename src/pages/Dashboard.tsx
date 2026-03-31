@@ -21,6 +21,8 @@ import {
 } from "recharts";
 import { useAuth } from "../components/AuthContext";
 import { useCurrency } from "../components/CurrencyContext";
+import { transactionAPI } from "../services/api";
+import { toast, Toaster } from "sonner";
 import { motion } from "motion/react";
 import { Link } from "react-router-dom";
 import { TransactionModal } from "../components/TransactionModal";
@@ -36,11 +38,13 @@ export function Dashboard() {
   }, []);
 
   const fetchData = async () => {
-    const res = await fetch("/api/transactions", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await res.json();
-    setTransactions(data);
+    try {
+      const data = await transactionAPI.getTransactions();
+      setTransactions(data || []);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to load transactions");
+      setTransactions([]);
+    }
   };
 
   const totalIncome = transactions
