@@ -10,8 +10,33 @@ import userRoutes from './routes/userRoutes.ts';
 const app = express();
 
 // CORS configuration - allow frontend origin
+const allowedOrigins = [
+  'http://localhost:5002',
+  'http://127.0.0.1:5002',
+  'http://localhost:5004',
+  'http://localhost:5005',
+  'http://localhost:5006',
+  'http://localhost:5173',
+  // Add your Vercel production URL here after deployment
+  // e.g., 'https://your-project.vercel.app'
+];
+
+// Add VERCEL_URL if running on Vercel
+if (process.env.VERCEL_URL) {
+  allowedOrigins.push(`https://${process.env.VERCEL_URL}`);
+}
+
 app.use(cors({
-  origin: ['http://localhost:5002', 'http://127.0.0.1:5002'],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],

@@ -1,7 +1,8 @@
 // API Service Layer for Trackify
 // Centralized API calls with error handling
 
-const API_BASE_URL = '/api';
+// Use environment variable or fallback to relative path
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Helper to get auth token
 const getToken = () => localStorage.getItem('token');
