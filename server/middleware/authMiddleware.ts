@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
-import User from '../models/User';
-import { IUser } from '../models/User';
+import User from '../models/User.js';
+import { IUser } from '../models/User.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'trackifySecretKey123';
 

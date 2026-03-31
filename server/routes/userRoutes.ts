@@ -4,8 +4,8 @@ import {
   updateUserProfile, 
   updateUserPassword, 
   exportUserData 
-} from '../controllers/userController';
-import { authenticateToken } from '../middleware/authMiddleware';
+} from '../controllers/userController.js';
+import { authenticateToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 

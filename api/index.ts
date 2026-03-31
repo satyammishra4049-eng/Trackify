@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 
 dotenv.config();
 
-import app from '../app.js';
+import app from '../server/app.js';
 
 let isReady = false;
 

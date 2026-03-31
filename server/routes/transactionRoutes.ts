@@ -5,8 +5,8 @@ import {
   deleteTransaction,
   getMonthlySummary,
   updateTransaction,
-} from '../controllers/transactionController';
-import { authenticateToken } from '../middleware/authMiddleware';
+} from '../controllers/transactionController.js';
+import { authenticateToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 

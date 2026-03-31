@@ -6,8 +6,8 @@ import {
   verifyEmail,
   resetPassword,
   resendVerificationOTP,
-} from '../controllers/authController';
-import { sendTestEmail } from '../services/emailService';
+} from '../controllers/authController.js';
+import { sendTestEmail } from '../services/emailService.js';
 
 const router = express.Router();
 
