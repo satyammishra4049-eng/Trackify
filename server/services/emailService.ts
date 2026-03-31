@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 
 // -------------------------------------------------------
 // EMAIL SERVICE - BULLETPROOF IMPLEMENTATION
@@ -76,14 +77,15 @@ const createGmailTransporter = () => {
   console.log(`[Email] 🔧 Creating Gmail transporter for: ${EMAIL_USER}`);
 
   try {
-    const transporter = nodemailer.createTransport({
+    const options: SMTPTransport.Options = {
       service: 'gmail',
       auth: {
         user: EMAIL_USER,
         pass: EMAIL_PASS,
       },
-      pool: false, // Disable pooling for reliability
-    });
+    };
+
+    const transporter = nodemailer.createTransport(options);
 
     return transporter;
   } catch (error: any) {
@@ -105,14 +107,16 @@ const createMailtrapTransporter = () => {
   console.log('[Email] 🔧 Creating Mailtrap transporter');
 
   try {
-    const transporter = nodemailer.createTransport({
+    const options: SMTPTransport.Options = {
       host: 'sandbox.smtp.mailtrap.io',
       port: 2525,
       auth: {
         user: MAILTRAP_USER,
         pass: MAILTRAP_PASS,
       },
-    });
+    };
+
+    const transporter = nodemailer.createTransport(options);
 
     return transporter;
   } catch (error: any) {
