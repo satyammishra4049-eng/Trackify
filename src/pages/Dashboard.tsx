@@ -86,7 +86,7 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
         <div>
           <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight transition-colors">Overview</h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">Track your financial health and spending patterns.</p>
@@ -115,7 +115,7 @@ export function Dashboard() {
             }
           }
         }}
-        className="grid grid-cols-1 md:grid-cols-3 gap-6"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6"
       >
         <SummaryCard 
           title="Total Balance" 
@@ -143,17 +143,17 @@ export function Dashboard() {
         />
       </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
         {/* Main Chart */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors relative overflow-hidden group"
+          className="lg:col-span-2 bg-white dark:bg-slate-900 p-4 md:p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors relative overflow-hidden group"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 transition-transform duration-700 group-hover:scale-150" />
           <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 relative z-10">Monthly Trends</h3>
-          <div className="h-[300px] w-full relative z-10">
+          <div className="h-[250px] md:h-[300px] w-full relative z-10">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" className="dark:opacity-10" />
@@ -182,11 +182,11 @@ export function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors relative overflow-hidden group"
+          className="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors relative overflow-hidden group"
         >
           <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/5 rounded-full -ml-16 -mb-16 transition-transform duration-700 group-hover:scale-150" />
           <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 relative z-10">Expenses by Category</h3>
-          <div className="h-[300px] w-full relative z-10">
+          <div className="h-[250px] md:h-[300px] w-full relative z-10">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -300,7 +300,7 @@ function SummaryCard({ title, amount, icon: Icon, color, formatAmount, gradient 
         visible: { opacity: 1, y: 0 }
       }}
       whileHover={{ y: -5, scale: 1.02 }}
-      className={`bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4 transition-all relative overflow-hidden group`}
+      className={`bg-white dark:bg-slate-900 p-4 md:p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3 md:gap-4 transition-all relative overflow-hidden group`}
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
       <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 relative z-10 transition-transform group-hover:scale-110 ${colors[color]}`}>

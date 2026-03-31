@@ -137,9 +137,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             initial={{ opacity: 0, x: -100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -100 }}
-            className="md:hidden fixed inset-0 bg-white dark:bg-slate-900 z-40 pt-20 px-6 transition-colors"
+            className="md:hidden fixed inset-0 bg-white dark:bg-slate-900 z-40 pt-16 transition-colors"
           >
-            <nav className="space-y-2">
+            <nav className="space-y-2 px-6 py-6">
               {navItems.map((item) => (
                 <Link
                   key={item.path}
@@ -175,7 +175,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className="flex-1 md:ml-60 pt-16 md:pt-0 p-4 md:p-8 min-h-screen">
+      <main className="flex-1 md:ml-60 pt-20 md:pt-0 p-4 md:p-8 min-h-screen">
         <div className="max-w-6xl mx-auto">
           {children}
         </div>
