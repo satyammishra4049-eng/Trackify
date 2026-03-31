@@ -17,8 +17,6 @@ const allowedOrigins = [
   'http://localhost:5005',
   'http://localhost:5006',
   'http://localhost:5173',
-  // Add your Vercel production URL here after deployment
-  // e.g., 'https://your-project.vercel.app'
 ];
 
 // Add VERCEL_URL if running on Vercel
@@ -26,12 +24,23 @@ if (process.env.VERCEL_URL) {
   allowedOrigins.push(`https://${process.env.VERCEL_URL}`);
 }
 
+// Add production URL if specified
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
+    // In development, allow any origin
+    if (process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+    
+    // In production, check allowed origins
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));

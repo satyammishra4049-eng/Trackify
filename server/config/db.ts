@@ -11,8 +11,8 @@ export const connectDB = async (): Promise<void> => {
   }
 
   const normalizedUri = rawUri.trim().replace(/^['"]|['"]$/g, '');
-  if (!/^mongodb:\/\//i.test(normalizedUri)) {
-    throw new Error('MONGO_URI must use mongodb:// (non-SRV URI)');
+  if (!/^mongodb(\+srv)?:\/\//i.test(normalizedUri)) {
+    throw new Error('MONGO_URI must use mongodb:// or mongodb+srv:// format');
   }
 
   mongoose.set('strictQuery', true);
