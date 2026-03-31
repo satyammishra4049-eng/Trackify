@@ -3,13 +3,13 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Import the Express app
-import app from './server/app.ts';
+// Import the Express app (relative path from api folder)
+import app from '../server/app.ts';
 
 // Vercel serverless handler
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Connect to DB on first request
-  const { connectDB } = await import('./server/config/db.ts');
+  const { connectDB } = await import('../server/config/db.ts');
   await connectDB();
   
   // Handle the request through Express

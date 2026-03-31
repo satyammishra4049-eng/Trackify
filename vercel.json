@@ -1,27 +1,18 @@
 {
   "version": 2,
   "name": "trackify",
-  "builds": [
+  "buildCommand": "npm run vercel-build",
+  "outputDirectory": "dist",
+  "installCommand": "npm install",
+  "framework": "vite",
+  "rewrites": [
     {
-      "src": "server.ts",
-      "use": "@vercel/node"
+      "source": "/api/(.*)",
+      "destination": "/api/index.ts"
     },
     {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "server.ts"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/dist/$1"
+      "source": "/(.*)",
+      "destination": "/dist/$1"
     }
   ],
   "env": {
