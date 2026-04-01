@@ -17,6 +17,7 @@ const allowedOrigins = [
   'http://localhost:5005',
   'http://localhost:5006',
   'http://localhost:5173',
+  'https://trackify-alpha-six.vercel.app',
 ];
 
 // Add VERCEL_URL if running on Vercel
@@ -39,12 +40,17 @@ app.use(cors({
       return callback(null, true);
     }
     
-    // In production, check allowed origins
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    // In production, allow Vercel URLs and any localhost for testing
+    if (allowedOrigins.includes(origin) || 
+        origin.includes('localhost') || 
+        origin.includes('127.0.0.1') ||
+        origin.includes('vercel.app')) {
+      return callback(null, true);
     }
+    
+    // Log the blocked origin for debugging
+    console.log(`[CORS] Blocked origin: ${origin}`);
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
