@@ -68,15 +68,7 @@ app.get('/api/health', (_req, res) => {
   res.status(200).json({ ok: true, service: 'trackify-backend' });
 });
 
-// If Mongo isn't connected yet, keep APIs stable and return a consistent response.
-app.use('/api', (_req: Request, res: Response, next: NextFunction) => {
-  if (mongoose.connection.readyState !== 1) {
-    res.status(503).json({ error: 'Database not connected' });
-    return;
-  }
-  next();
-});
-
+// API Routes - database connection is handled in api/index.ts
 app.use('/api/auth', authRoutes);
 app.use('/api/budgets', budgetRoutes);
 app.use('/api/transactions', transactionRoutes);

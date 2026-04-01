@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import { sendOTPEmail, sendWelcomeEmail } from '../services/emailService.js';
 
@@ -148,6 +149,12 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
   console.log('[Auth] Login attempt for email:', req.body?.email);
 
   try {
+    // Check database connection
+    if (mongoose.connection.readyState !== 1) {
+      console.log('[Auth] Database not connected, attempting to connect...');
+      await mongoose.connect(process.env.MONGO_URI!);
+    }
+
     const { email, password } = req.body || {};
 
     // --- Validation ---
@@ -190,6 +197,16 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
     });
   } catch (err: any) {
     console.error('[Auth] ❌ Login error:', err.message);
+    
+    // Check if it's a database connection error
+    if (err.message && err.message.includes('MongoNetworkError')) {
+      res.status(503).json({ 
+        error: 'Database connection issue. Please try again in a moment.',
+        retry: true 
+      });
+      return;
+    }
+    
     res.status(500).json({ error: 'Server error during login. Please try again.' });
   }
 };
